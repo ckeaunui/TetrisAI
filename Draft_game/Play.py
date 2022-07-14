@@ -1,7 +1,6 @@
 from tkinter import *
 from tkinter.ttk import *
 
-import bag as bag
 
 from Board import Board
 from Piece import Piece
