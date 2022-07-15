@@ -1,4 +1,5 @@
 import numpy as np
+from Tetris_env import Tetris
 from collections import deque
 
 
@@ -33,13 +34,13 @@ class Layer:
         print("Weights", self.weights)
         print("Bias: ", self.bias)
 
+
 class DNN:
     def __init__(self, input_layer_size, num_hidden_layers, hidden_layer_size, output_layer_size):
         self.active_layer = 0
         self.layers = np.empty(num_hidden_layers + 1, dtype=object)
         self.hidden_layer_size = hidden_layer_size
         self.num_hidden_layers = num_hidden_layers
-
         self.layers[0] = Layer(input_layer_size)
         for i in range(1, num_hidden_layers):
             layer_i = Layer(size_hidden_layer)
@@ -55,18 +56,27 @@ class DNN:
         Z_activated = self.layers[self.active_layer].activation_ReLU(Z_unactivated)
         return Z_activated
 
+    def get_best_action(self, state):
+        self.forward_step(state)
 
-input_layer_size = 200
-num_hidden_layers = 5
-size_hidden_layer = 10
-output_layer_size = 15
+
+input_layer_size = 234
+size_hidden_layer = 16
+num_hidden_layers = 4
+output_layer_size = 6
 
 dnn = DNN(input_layer_size, num_hidden_layers, size_hidden_layer, output_layer_size)
 dnn.print_layers()
 
-layer = Layer(200)
+input_layer = Layer(input_layer_size)
+
+env = Tetris()
+iterations = 100000
+
+while env.playing:
+    state = env.get_state_as_arr()
+    dnn.get_best_action(state)
 
 
-
-
+env.render()
 

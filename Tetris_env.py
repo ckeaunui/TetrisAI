@@ -7,7 +7,8 @@ import time
 import copy
 
 """
-Tetrino class is responsible for storing the pieces shape, and moving the piece through translation or rotations
+Tetrino class is responsible for storing the pieces shape, and moving the piece through translation or rotations.
+Call render after setting: env = Tetris()
 """
 
 
@@ -20,7 +21,8 @@ class Tetrino:
         3: [np.array([[0, 1, 1], [1, 1, 0], [0, 0, 0]]), [0, 255, 0]],  # S
         4: [np.array([[1, 1, 0], [0, 1, 1], [0, 0, 0]]), [255, 0, 0]],  # Z
         5: [np.array([[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]]), [0, 255, 255]],  # I
-        6: [np.array([[0, 1, 0], [1, 1, 1], [0, 0, 0]]), [225, 0, 225]]  # T
+        6: [np.array([[0, 1, 0], [1, 1, 1], [0, 0, 0]]), [225, 0, 225]],  # T
+        -1: [np.array([[0]]), [0, 0, 0]]  # Blank piece
     }
 
     def __init__(self):
@@ -30,12 +32,12 @@ class Tetrino:
         self.rotation = 0  # 0, 1, 2, 3 for how many times it has rotated
         self.color = [0, 0, 0]  # Default color
         self.shape_id = -1  # 0-6 int which represents the pieces shape in TETRINOS
+        self.relative_tile_pos = np.array([[-1, -1] * 4])
 
     def set_shape(self, shape_id: int):  # Initialize the properties of the piece
         self.shape_id = shape_id
         self.shape, self.color = Tetrino.TETRINOS.get(shape_id, "No such shape exists")
         self.ref_point = np.array([0, 3])  # (y, x)
-
         if self.shape.shape is not None:  # If the shape is not blank, set the current dimensions
             height = 0
             width = 0
@@ -45,19 +47,36 @@ class Tetrino:
                 if np.any(self.shape.T[i] == 1):
                     width += 1
             self.dim = [height, width]
+        self.set_relative_tile_pos()
 
-    def move(self, move: [int, int]):  # Move the piece by shifting its reference point
-        self.ref_point += move
+    def set_relative_tile_pos(self):
+        if self.shape_id == -1:
+            return
 
-    def rotate_right(self, translation=[0,0]):
+        # Reset relative tile pos here
+        self.relative_tile_pos = np.empty((1, 4), dtype=int)
+        print(self.relative_tile_pos)
+        count = 0
+        for i in range(len(self.shape[0])):
+            for j in range(len(self.shape[1])):
+                if self.shape[i][j] == 1:
+                    np.concatenate((self.relative_tile_pos.flatten(), [i, j]))
+
+    def move(self, direction: [int, int]):  # Move the piece by shifting its reference point
+        self.ref_point += direction
+
+    def rotate_right(self, translation=[0, 0]):
         self.shape = np.flipud(self.shape).T  # Rotate
         self.dim = self.dim[::-1]  # Adjust dimensions
-        self.move(translation) # wall kick
+        self.move(translation)  # wall kick
+
+    def reset(self):  # return piece to default position
+        self.set_shape(self.shape_id)
 
 
 class Tetris:
     BOARD_HEIGHT = 900
-    BOARD_WIDTH = 600
+    BOARD_WIDTH = 800
     TILE_SIZE = 30  # Make the tile size based on the smaller axis (height or width)
     BOARD_DIMS = (24, 10)  # 20 rows + 4 for spawning the tile, 10 columns
 
@@ -68,72 +87,85 @@ class Tetris:
         self.lines_cleared = 0  # Total lines cleared
         self.gravity_timer = 0  # Current time between piece drops
         self.current_piece = None  # The current active piece
-        self.next_piece = None  # -_o
+        self.next_piece = None  # The next piece
+        self.stored_piece = None  # -_o
         self.playing = False  # True while game is being played
         self.game_board = None  # Board tile data
         self.window = None  # Pygame display to blit visuals to
+        self.can_store = False  # Can the current piece be stored
         self.bag = []  # Empty bag
 
     def render(self):
         pygame.display.init()
         self.playing = True
+        self.can_store = True
+        self.stored_piece = Tetrino()
+        self.stored_piece.set_shape(-1)
         self.last_drop = time.time()
         self.gravity_timer = 3  # Seconds
         self.game_board = np.zeros(shape=self.BOARD_DIMS, dtype=int)  # 20 rows + 4 for the piece to spawn in
         self.window = pygame.display.set_mode((self.BOARD_WIDTH, self.BOARD_HEIGHT), 0, 32)
+        self.window.fill((30, 30, 30))
         self.reset_bag()  # Bag of pieces to randomly pick from
+        self.set_next_piece()
 
     def draw_graphics(self):
         # Setup pygame text
         pygame.font.init()
         font = pygame.font.SysFont("OCR A Extended", 50, bold=True)
         font2 = pygame.font.SysFont("OCR A Extended", 30, bold=False)
-        font3 = pygame.font.SysFont("OCR A Extended", 15, bold=False)
 
         # Draw graphics outside the game_board
-        pygame.draw.rect(self.window, (45, 45, 45), (400, 0, 10, 640))
-        pygame.draw.rect(self.window, (30, 30, 30), (410, 0, 480, 640))
+        # pygame.draw.rect(self.window, (30, 30, 45), (0, 0, 250, self.BOARD_HEIGHT))
+        # pygame.draw.rect(self.window, (30, 30, 30), (550, 0, self.BOARD_WIDTH, self.BOARD_HEIGHT))
 
-        # Draw sound icon
-        pygame.draw.rect(self.window, (255, 255, 255), (420, 617.5, 10, 15))
-        pygame.draw.rect(self.window, (255, 255, 255), (434, 620, 2, 10))
-        pygame.draw.rect(self.window, (255, 255, 255), (438, 618, 2, 13))
-        pygame.draw.rect(self.window, (255, 255, 255), (442, 617.5, 2, 15))
-        volume_surface = font3.render('(M)', True, (255, 255, 255))
-        self.window.blit(volume_surface, (450, 615))
+        # Draw "Tetris" text
+        title_surface = font.render('Tetris', True, (255, 255, 255))
+        self.window.blit(title_surface, (620, 10))
 
-        # Draw mute icon
-        sound_off = False
-        if sound_off:
-            pygame.draw.rect(self.window, (153, 51, 51), (418, 623, 29, 5))
+        # Draw stored piece
+        stored_piece_surface = font2.render('Stored Piece (c)', True, (255, 255, 255))
+        pygame.draw.rect(self.window, (0, 0, 0), (50, 50, 165, 165))
+        self.window.blit(stored_piece_surface, (55, 55))
+        if self.stored_piece is not None:
+            piece_tile = self.get_tile(self.stored_piece.color)
+            for i in range(len(self.stored_piece.shape[0])):
+                for j in range(len(self.stored_piece.shape[1])):
+                    if self.stored_piece.shape[i][j] == 1:
+                        shift_amount = {0: 100, 1: 85, 2: 85, 3: 85, 4: 85, 5: 70, 6: 85}  # Centers horizontally
+                        shift = shift_amount.get(self.stored_piece.shape_id)
+                        self.window.blit(piece_tile, (j * self.TILE_SIZE + shift, i * self.TILE_SIZE + 105))
 
-        # Draw "T E T R A CUBE" text
-        TETRO_surface = font.render('Tetris', True, (255, 255, 255))
-        self.window.blit(TETRO_surface, (420, 10))
-        """        
-        CUBE_surface = font.render('CUBE', True, (255, 255, 255))
-        board.window.blit(CUBE_surface, (26.666666666666668, 0))
-        """
+        # Draw score
+        score_surface = font2.render('Score', True, (255, 255, 255))
+        self.window.blit(score_surface, (660, 200))
+        self.window.blit(font.render(str(round(self.score)), 1, (255, 255, 255)), (620, 230))
 
-        # Draw "restart" text
-        restart_surface = font2.render('RESTART(R)', True, (255, 255, 255))
-        self.window.blit(restart_surface, (417, 550))
+        # Draw level
+        level_surface = font2.render('Level', True, (255, 255, 255))
+        self.window.blit(level_surface, (620, 600))
+        self.window.blit(font.render(str(round(self.score)), 1, (255, 255, 255)), (620, 630))
 
-        # Draw "score" text and "score" number
-        score_surface = font2.render('SCORE', True, (255, 255, 255))
-        self.window.blit(score_surface, (460, 200))
-        self.window.blit(font.render(str(round(self.score)), 1, (255, 255, 255)), (420, 230))
-
+        # Push to display
         pygame.display.update()
 
     def print_board(self):
         print(self.game_board)
 
-    def get_board(self):
-        return self.game_board
+    # def get_state(self):
+
+    def get_state_as_arr(self):  # State: Board array (210), stored piece id (1), next piece id (1), score (1), Level (1), lines cleared (1)
+        board = self.game_board.flatten()
+        piece = self.current_piece.relative_tile_pos.flatten()
+        next_piece = self.next_piece.relative_tile_pos.flatten()
+        stored_piece = self.stored_piece.relative_tile_pos.flatten()
+        state = board + piece + next_piece + stored_piece
+        print(state)
+
+        return state
 
     # The board is made up of tiles. This function returns a given tile and its correct color
-    def get_tile(self, color=[135, 135, 135], border_color='black'):
+    def get_tile(self, color=(135, 135, 135), border_color='black'):
         tile = pygame.Surface((self.TILE_SIZE, self.TILE_SIZE))
         tile.fill(color=border_color)  # border
         pygame.draw.rect(tile, color=color, rect=(1, 1, self.TILE_SIZE - 2, self.TILE_SIZE - 2))  # tile color
@@ -141,11 +173,12 @@ class Tetris:
 
     # Draw board, the active piece, the stored piece, and shadow
     def draw_board(self):
-        next_board_surface = pygame.Surface(
-            (self.TILE_SIZE * 10, self.TILE_SIZE * 24))  # Blank board to update, then replace the current board
-        next_board_surface.fill(color=[55, 55, 55])
+        # Blank board to update, then replace the current board
+        next_board_surface = pygame.Surface((self.TILE_SIZE * 10, self.TILE_SIZE * 24))
+        next_board_surface.fill(color=[0, 0, 0])
         blank_tile = self.get_tile()
 
+        # Draw on the new surface
         spawn_surface = pygame.Surface((10 * self.TILE_SIZE, 4 * self.TILE_SIZE), pygame.SRCALPHA, 32)
         spawn_surface.fill(color="blue")
         spawn_surface = spawn_surface.convert_alpha()
@@ -181,20 +214,24 @@ class Tetris:
         next_board_surface.blit(shadow_surface,
                                 (self.TILE_SIZE * shadow.ref_point[1], self.TILE_SIZE * shadow.ref_point[0]))
         next_board_surface.blit(piece_surface,
-                                (self.TILE_SIZE * self.current_piece.ref_point[1], self.TILE_SIZE * self.current_piece.ref_point[0]))
+                                (self.TILE_SIZE * self.current_piece.ref_point[1],
+                                 self.TILE_SIZE * self.current_piece.ref_point[0]))
+
         # Draw score and the rest of the visual add-ons
         self.draw_graphics()
-        self.window.blit(next_board_surface, (50, 50))
+        self.window.blit(next_board_surface, (250, 50))
         pygame.display.update()
 
     def update_board(self):  # Stores the piece after it is ready to be locked in place
         for y in range(len(self.current_piece.shape[0])):  # For each row
             for x in range(len(self.current_piece.shape[1])):  # For each column
                 if self.current_piece.shape[y][x] != 0:
-                    self.game_board[y + self.current_piece.ref_point[0]][x + self.current_piece.ref_point[1]] += self.current_piece.shape[y][x]
+                    self.game_board[y + self.current_piece.ref_point[0]][x + self.current_piece.ref_point[1]] += \
+                    self.current_piece.shape[y][x]
         pygame.display.update()
 
-    def is_legal_move(self, piece: Tetrino, move: [int, int]):  # Create a copy of the piece, move it, and check if it was legal
+    def is_legal_move(self, piece: Tetrino,
+                      move: [int, int]):  # Create a copy of the piece, move it, and check if it was legal
         new_ref_point = piece.ref_point + move
         if new_ref_point[1] not in range(0 + piece.dim[1] - len(piece.shape[1]), 11 - piece.dim[1]):
             return False
@@ -211,7 +248,8 @@ class Tetris:
                         return False
         return True
 
-    def is_legal_wall_kick(self, piece):  # Cross-reference an illegal rotation with potential 'safety spots' it can translate to
+    def is_legal_wall_kick(self,
+                           piece):  # Cross-reference an illegal rotation with potential 'safety spots' it can translate to
         positions_to_move = [[0, 1], [0, -1], [0, 2], [0, -2], [1, 0], [-1, 0], [2, 0], [-2, 0]]
         for position in positions_to_move:
             if self.is_legal_move(piece, position):
@@ -246,8 +284,10 @@ class Tetris:
                     tile_vert_pos = y + next_piece_state.ref_point[0]
                     tile_hor_pos = x + next_piece_state.ref_point[1]
                     if (tile_vert_pos not in range(24)) or (tile_hor_pos not in range(10)) or \
-                            (self.game_board[tile_vert_pos][tile_hor_pos] == 1):  # If the current rotation is not legal, check for wall kick options
-                        return self.is_legal_wall_kick(next_piece_state)   # If a wall kick is possible, return true for can rotate
+                            (self.game_board[tile_vert_pos][
+                                 tile_hor_pos] == 1):  # If the current rotation is not legal, check for wall kick options
+                        return self.is_legal_wall_kick(
+                            next_piece_state)  # If a wall kick is possible, return true for can rotate
         return True, [0, 0]
 
     def reset_bag(self):
@@ -283,27 +323,36 @@ class Tetris:
                 else:
                     self.update_board()
                     self.set_next_piece()
+                    self.can_store = True
             case 3:  # Hard drop
                 while self.is_legal_move(self.current_piece, [1, 0]):  # Move the piece as far down as it can go legally
                     self.current_piece.move([1, 0])
                 self.update_board()  # Add the pieces occupied tiles to the game board data
                 self.current_piece = self.next_piece
                 self.set_next_piece()  # Change to the next piece and fetch a new next piece from bag
+                self.can_store = True
             case 4:  # Rotate
                 can_kick, kick_dir = self.is_legal_rotation()
                 if can_kick:
                     self.current_piece.rotate_right(kick_dir)
-            case 5:  # Need to implement
-                print("Store")
-
-        self.draw_board()
+            case 5:  # store
+                if not self.can_store:
+                    return 0
+                self.current_piece.reset()
+                if self.stored_piece is None:
+                    self.stored_piece = self.current_piece
+                    self.set_next_piece()
+                else:
+                    swap = self.stored_piece
+                    self.stored_piece = self.current_piece
+                    self.current_piece = swap
+                self.can_store = False
         if self.check_game_end():
             self.playing = False
-
         # pygame.time.delay(100)
         return self.get_reward()
 
-    def check_full_rows(self):  # Handles changes when a row is filled
+    def check_full_rows(self):  # Handle changes when a row is filled
         # Check for which rows to clear and how many cleared in a single move
         new_lines_cleared = 0
         for row in range(24):
@@ -329,7 +378,6 @@ class Tetris:
 
     def play(self):  # For the user to play the game
         self.render()
-        self.set_next_piece()  # Set the first two pieces
         self.draw_board()  # Show the blank board and current piece at the top of the board
 
         while self.playing:  # Keep running until terminal condition is met
@@ -340,24 +388,20 @@ class Tetris:
             if len(event) > 0:
                 if event[0].type == pygame.KEYDOWN:
                     match event[0].key:
-                        # Quit
-                        case pygame.K_ESCAPE:
+                        case pygame.K_ESCAPE:  # Quit
                             self.playing = False
-                        # Move left
-                        case pygame.K_LEFT | pygame.K_a:
+                        case pygame.K_LEFT | pygame.K_a:  # Move left
                             self.execute_curr_state(0)
-                        # Move right
-                        case pygame.K_RIGHT | pygame.K_d:
+                        case pygame.K_RIGHT | pygame.K_d:  # Move right
                             self.execute_curr_state(1)
-                        # Move down
-                        case pygame.K_DOWN | pygame.K_s:
+                        case pygame.K_DOWN | pygame.K_s:  # Move down
                             self.execute_curr_state(2)
-                        # Hard drop
-                        case pygame.K_SPACE:
+                        case pygame.K_SPACE:  # Hard drop
                             self.execute_curr_state(3)
-                        # Rotation
-                        case pygame.K_UP | pygame.K_w:
+                        case pygame.K_UP | pygame.K_w:  # Rotation
                             self.execute_curr_state(4)
+                        case pygame.K_c:  # Store
+                            self.execute_curr_state(5)
             self.draw_board()  # Update to display the last action
             # pygame.time.delay(75)  # Delay between moves to prevent one key input counting several times
 
@@ -366,17 +410,17 @@ class Tetris:
         pygame.quit()
 
 
-"""env = Tetris()
+env = Tetris()
 env.render()
 pygame.display.init()
+env.draw_board()
 while env.playing:
-    env.set_next_piece()
-    print(env.current_piece.shape_id)
-    move = 1  # Down
+    move = random.randint(0, 6)  # Down
     env.execute_curr_state(move)  # Move the piece and update board
     env.draw_board()
-    pygame.time.delay(100)"""
-T = Tetris()
-T.play()
+    # pygame.time.delay(100)
+
+env.print_board()
+print("Score: ", env.score)
 pygame.quit()
 
