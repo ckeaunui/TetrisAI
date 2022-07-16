@@ -22,7 +22,7 @@ class Tetrino:
         4: [np.array([[1, 1, 0], [0, 1, 1], [0, 0, 0]]), [255, 0, 0]],  # Z
         5: [np.array([[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]]), [0, 255, 255]],  # I
         6: [np.array([[0, 1, 0], [1, 1, 1], [0, 0, 0]]), [225, 0, 225]],  # T
-        -1: [np.array([[0]]), [0, 0, 0]]  # Blank piece
+        # -1: [np.array([[0]]), [0, 0, 0]]  # Blank piece
     }
 
     def __init__(self):
@@ -32,7 +32,6 @@ class Tetrino:
         self.rotation = 0  # 0, 1, 2, 3 for how many times it has rotated
         self.color = [0, 0, 0]  # Default color
         self.shape_id = -1  # 0-6 int which represents the pieces shape in TETRINOS
-        self.relative_tile_pos = np.array([[-1, -1] * 4])
 
     def set_shape(self, shape_id: int):  # Initialize the properties of the piece
         self.shape_id = shape_id
@@ -47,25 +46,25 @@ class Tetrino:
                 if np.any(self.shape.T[i] == 1):
                     width += 1
             self.dim = [height, width]
-        self.set_relative_tile_pos()
 
-    def set_relative_tile_pos(self):
+    def get_tetrino_as_arr(self):
         if self.shape_id == -1:
             return
 
         # Reset relative tile pos here
-        self.relative_tile_pos = np.empty((1, 4), dtype=int)
-        print(self.relative_tile_pos)
-        count = 0
+        relative_tile_pos = []
         for i in range(len(self.shape[0])):
             for j in range(len(self.shape[1])):
                 if self.shape[i][j] == 1:
-                    np.concatenate((self.relative_tile_pos.flatten(), [i, j]))
+                    relative_tile_pos.append([i, j])
+        print(relative_tile_pos)
 
     def move(self, direction: [int, int]):  # Move the piece by shifting its reference point
         self.ref_point += direction
 
-    def rotate_right(self, translation=[0, 0]):
+    def rotate_right(self, translation=None):
+        if translation is None:
+            translation = [0, 0]
         self.shape = np.flipud(self.shape).T  # Rotate
         self.dim = self.dim[::-1]  # Adjust dimensions
         self.move(translation)  # wall kick
@@ -99,8 +98,6 @@ class Tetris:
         pygame.display.init()
         self.playing = True
         self.can_store = True
-        self.stored_piece = Tetrino()
-        self.stored_piece.set_shape(-1)
         self.last_drop = time.time()
         self.gravity_timer = 3  # Seconds
         self.game_board = np.zeros(shape=self.BOARD_DIMS, dtype=int)  # 20 rows + 4 for the piece to spawn in
@@ -124,6 +121,7 @@ class Tetris:
         self.window.blit(title_surface, (620, 10))
 
         # Draw stored piece
+
         stored_piece_surface = font2.render('Stored Piece (c)', True, (255, 255, 255))
         pygame.draw.rect(self.window, (0, 0, 0), (50, 50, 165, 165))
         self.window.blit(stored_piece_surface, (55, 55))
@@ -230,8 +228,9 @@ class Tetris:
                     self.current_piece.shape[y][x]
         pygame.display.update()
 
-    def is_legal_move(self, piece: Tetrino,
-                      move: [int, int]):  # Create a copy of the piece, move it, and check if it was legal
+    def is_legal_move(self, piece: Tetrino, move: [int, int]):  # Create a copy of the piece, move it, and check if it was legal
+        if piece.shape_id == -1:
+            return False
         new_ref_point = piece.ref_point + move
         if new_ref_point[1] not in range(0 + piece.dim[1] - len(piece.shape[1]), 11 - piece.dim[1]):
             return False
