@@ -121,7 +121,6 @@ class Tetris:
         self.window.blit(title_surface, (620, 10))
 
         # Draw stored piece
-
         stored_piece_surface = font2.render('Stored Piece (c)', True, (255, 255, 255))
         pygame.draw.rect(self.window, (0, 0, 0), (50, 50, 165, 165))
         self.window.blit(stored_piece_surface, (55, 55))
@@ -137,12 +136,12 @@ class Tetris:
         # Draw score
         score_surface = font2.render('Score', True, (255, 255, 255))
         self.window.blit(score_surface, (660, 200))
-        self.window.blit(font.render(str(round(self.score)), 1, (255, 255, 255)), (620, 230))
+        self.window.blit(font.render(str(round(self.score)), True, (255, 255, 255)), (620, 230))
 
         # Draw level
         level_surface = font2.render('Level', True, (255, 255, 255))
         self.window.blit(level_surface, (620, 600))
-        self.window.blit(font.render(str(round(self.score)), 1, (255, 255, 255)), (620, 630))
+        self.window.blit(font.render(str(round(self.score)), True, (255, 255, 255)), (620, 630))
 
         # Push to display
         pygame.display.update()
@@ -304,9 +303,9 @@ class Tetris:
             self.current_piece = self.next_piece
         self.next_piece = self.bag.pop(random.randint(0, len(self.bag) - 1))
 
-    def execute_curr_state(self, move=-1):
+    def execute_curr_state(self, action=-1):
         # move_options = {0: Left, 1: Right, 2: Soft-drop, 3: Hard-drop, 4: Rotate, 5: Store}
-        match move:
+        match action:
             case -1:  # None
                 return 0
             case 0:  # Left
