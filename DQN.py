@@ -7,12 +7,14 @@ from collections import deque
 
 
 class Layer:
-    def __init__(self, layer_size):
-        self.weights = np.random.rand(layer_size) - 0.5
+    def __init__(self, input_size, output_size):
+        self.weights = np.random.rand(input_size * output_size) - 0.5
         self.bias = 0
-        self.layer_size = layer_size
+        self.num_nodes = output_size
 
-    def forward(self, X):  # Not working 
+    def forward(self, X):  # Not working
+        print("X", X.shape)
+        print("W", self.weights.shape)
         Z = np.dot(X, self.weights) + self.bias
         return Z
 
@@ -53,6 +55,11 @@ class DNN:
             self.layers[i] = layer_i
         self.layers[-1] = Layer(output_layer_size)
 
+    def set_layer(self, input_size, output_size, bias=0):
+        self.layers[self.active_layer].weights = np.empty(input_size * output_size)
+        self.layers[self.active_layer].bias = bias
+
+
     def print_layers(self):
         for i in range(len(self.layers)):
             self.layers[i].print_layer()
@@ -67,9 +74,8 @@ class DNN:
         return Z_activated
 
 
-
-
     def get_best_action(self, state):
+
         input_layer_activation = self.forward_step(state)
         layer_1_activation = self.forward_step(input_layer_activation)
         layer_2_activation = self.forward_step(layer_1_activation)
