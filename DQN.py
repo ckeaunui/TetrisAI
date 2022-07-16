@@ -1,4 +1,7 @@
+import random
+
 import numpy as np
+import pygame
 from Tetris_env import Tetris
 from collections import deque
 
@@ -9,12 +12,15 @@ class Layer:
         self.bias = 0
         self.layer_size = layer_size
 
-    def forward(self, X):  # Return unactivated Z
-        Z = X.dot(self.weights) + self.bias
+    def forward(self, X):  # Not working 
+        Z = np.dot(X, self.weights) + self.bias
         return Z
 
     def activation_ReLU(self, Z):  # Returns activated Z
         return np.maximum(Z, 0)
+
+    def activation_sigmoid(self, Z):  # Returns output activations
+        return 1 / (1 + np.exp(-Z))
 
     def softmax(self, Z):  # Activation for output layer
         return np.exp(Z) / np.sum(np.exp(Z))
@@ -36,10 +42,10 @@ class Layer:
 
 
 class DNN:
-    def __init__(self, input_layer_size, num_hidden_layers, hidden_layer_size, output_layer_size):
+    def __init__(self, input_layer_size, num_hidden_layers, size_hidden_layer, output_layer_size):
         self.active_layer = 0
         self.layers = np.empty(num_hidden_layers + 1, dtype=object)
-        self.hidden_layer_size = hidden_layer_size
+        self.size_hidden_layer = size_hidden_layer
         self.num_hidden_layers = num_hidden_layers
         self.layers[0] = Layer(input_layer_size)
         for i in range(1, num_hidden_layers):
@@ -52,31 +58,28 @@ class DNN:
             self.layers[i].print_layer()
 
     def forward_step(self, X):
-        Z_unactivated = self.layers[self.active_layer].forwward(X)
-        Z_activated = self.layers[self.active_layer].activation_ReLU(Z_unactivated)
+        Z_unactivated = np.array(self.layers[self.active_layer].forward(X))
+        if self.active_layer == self.num_hidden_layers + 1:
+            Z_activated = self.layers[self.active_layer].activation_ReLU(Z_unactivated)
+        else:
+            Z_activated = self.layers[self.active_layer].activation_sigmoid(Z_unactivated)
+        self.active_layer += 1
         return Z_activated
 
+
+
+
     def get_best_action(self, state):
-        self.forward_step(state)
+        input_layer_activation = self.forward_step(state)
+        layer_1_activation = self.forward_step(input_layer_activation)
+        layer_2_activation = self.forward_step(layer_1_activation)
+        layer_3_activation = self.forward_step(layer_2_activation)
+        layer_4_activation = self.forward_step(layer_3_activation)
+        output_layer_activation = self.forward_step(layer_4_activation)
+        move = np.argmax(output_layer_activation)
+        print(move)
+        print(len(output_layer_activation))
 
 
-input_layer_size = 234
-size_hidden_layer = 16
-num_hidden_layers = 4
-output_layer_size = 6
-
-dnn = DNN(input_layer_size, num_hidden_layers, size_hidden_layer, output_layer_size)
-dnn.print_layers()
-
-input_layer = Layer(input_layer_size)
-
-env = Tetris()
-iterations = 100000
-
-while env.playing:
-    state = env.get_state_as_arr()
-    dnn.get_best_action(state)
-
-
-env.render()
+        return move
 

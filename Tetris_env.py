@@ -50,14 +50,12 @@ class Tetrino:
     def get_tetrino_as_arr(self):
         if self.shape_id == -1:
             return
-
-        # Reset relative tile pos here
         relative_tile_pos = []
         for i in range(len(self.shape[0])):
             for j in range(len(self.shape[1])):
                 if self.shape[i][j] == 1:
                     relative_tile_pos.append([i, j])
-        print(relative_tile_pos)
+        return relative_tile_pos
 
     def move(self, direction: [int, int]):  # Move the piece by shifting its reference point
         self.ref_point += direction
@@ -112,10 +110,6 @@ class Tetris:
         font = pygame.font.SysFont("OCR A Extended", 50, bold=True)
         font2 = pygame.font.SysFont("OCR A Extended", 30, bold=False)
 
-        # Draw graphics outside the game_board
-        # pygame.draw.rect(self.window, (30, 30, 45), (0, 0, 250, self.BOARD_HEIGHT))
-        # pygame.draw.rect(self.window, (30, 30, 30), (550, 0, self.BOARD_WIDTH, self.BOARD_HEIGHT))
-
         # Draw "Tetris" text
         title_surface = font.render('Tetris', True, (255, 255, 255))
         self.window.blit(title_surface, (620, 10))
@@ -149,16 +143,17 @@ class Tetris:
     def print_board(self):
         print(self.game_board)
 
-    # def get_state(self):
-
     def get_state_as_arr(self):  # State: Board array (210), stored piece id (1), next piece id (1), score (1), Level (1), lines cleared (1)
         board = self.game_board.flatten()
-        piece = self.current_piece.relative_tile_pos.flatten()
-        next_piece = self.next_piece.relative_tile_pos.flatten()
-        stored_piece = self.stored_piece.relative_tile_pos.flatten()
-        state = board + piece + next_piece + stored_piece
-        print(state)
+        piece = np.asarray(self.current_piece.get_tetrino_as_arr()).flatten()
+        next_piece = np.asarray(self.next_piece.get_tetrino_as_arr()).flatten()
+        can_store = [1] if self.can_store else [0]
+        if self.stored_piece is None:
+            stored_piece = np.array([-1, -1] * 4).flatten()
+        else:
+            stored_piece = np.asarray(self.stored_piece.get_tetrino_as_arr()).flatten()
 
+        state = np.concatenate((board, piece, next_piece, stored_piece, can_store))
         return state
 
     # The board is made up of tiles. This function returns a given tile and its correct color
@@ -317,6 +312,7 @@ class Tetris:
             case 2:  # Soft drop
                 if self.is_legal_move(self.current_piece, [1, 0]):
                     self.current_piece.move([1, 0])
+                    self.score += 1
                     self.last_drop = time.time()  # Soft drop resets gravity clock
                 else:
                     self.update_board()
@@ -408,7 +404,7 @@ class Tetris:
         pygame.quit()
 
 
-env = Tetris()
+"""env = Tetris()
 env.render()
 pygame.display.init()
 env.draw_board()
@@ -421,4 +417,4 @@ while env.playing:
 env.print_board()
 print("Score: ", env.score)
 pygame.quit()
-
+"""
