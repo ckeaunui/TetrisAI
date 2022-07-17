@@ -27,7 +27,8 @@ class Tetrino:
 
     def __init__(self):
         self.shape = None  # Initial shape is blank
-        self.ref_point = np.array([0, 0], dtype=int)  # All reference points are the cords of the top left of its mxm array
+        self.ref_point = np.array([0, 0],
+                                  dtype=int)  # All reference points are the cords of the top left of its mxm array
         self.dim = [0, 0]  # Dimensions of the shapes current orientation
         self.rotation = 0  # 0, 1, 2, 3 for how many times it has rotated
         self.color = [0, 0, 0]  # Default color
@@ -143,7 +144,8 @@ class Tetris:
     def print_board(self):
         print(self.game_board)
 
-    def get_state_as_arr(self):  # State: Board array (210), stored piece id (1), next piece id (1), score (1), Level (1), lines cleared (1)
+    def get_state_as_arr(
+            self):  # State: Board array (210), stored piece id (1), next piece id (1), score (1), Level (1), lines cleared (1)
         board = self.game_board.flatten()
         piece = np.asarray(self.current_piece.get_tetrino_as_arr()).flatten()
         ref = np.asarray(self.current_piece.ref_point).flatten()
@@ -219,11 +221,11 @@ class Tetris:
         for y in range(len(self.current_piece.shape[0])):  # For each row
             for x in range(len(self.current_piece.shape[1])):  # For each column
                 if self.current_piece.shape[y][x] != 0:
-                    self.game_board[y + self.current_piece.ref_point[0]][x + self.current_piece.ref_point[1]] += \
-                    self.current_piece.shape[y][x]
+                    self.game_board[y + self.current_piece.ref_point[0]][x + self.current_piece.ref_point[1]] += self.current_piece.shape[y][x]
         pygame.display.update()
 
-    def is_legal_move(self, piece: Tetrino, move: [int, int]):  # Create a copy of the piece, move it, and check if it was legal
+    def is_legal_move(self, piece: Tetrino,
+                      move: [int, int]):  # Create a copy of the piece, move it, and check if it was legal
         if piece.shape_id == -1:
             return False
         new_ref_point = piece.ref_point + move

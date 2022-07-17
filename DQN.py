@@ -4,6 +4,9 @@ import numpy as np
 import pygame
 from Tetris_env import Tetris
 from collections import deque
+from diagrams import Diagram
+# from shapes.Shape import Paper, Rectangle, Circle, Arrow
+# Install Graphviz
 
 
 class Layer:
@@ -98,4 +101,10 @@ class DNN:
 
     def get_loss(self):
         return 1
+
+    def draw_nn(self):
+        with Diagram(show=True, direction="TR"):
+            dns = Circle("DNS")
+        return
+
 
