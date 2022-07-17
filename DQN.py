@@ -4,8 +4,7 @@ import numpy as np
 import pygame
 from Tetris_env import Tetris
 from collections import deque
-from diagrams import Diagram
-# from shapes.Shape import Paper, Rectangle, Circle, Arrow
+from shapes import Paper, Rectangle, Oval
 # Install Graphviz
 
 
@@ -103,8 +102,29 @@ class DNN:
         return 1
 
     def draw_nn(self):
-        with Diagram(show=True, direction="TR"):
-            dns = Circle("DNS")
+
+        height = 750
+        width = 750
+        node_size = (height / self.size_hidden_layer) * 0.4
+
+        paper = Paper(width=750, height=750)
+        num_rows = self.num_hidden_layers+2
+
+        for i in range(0, num_rows):
+
+            x = (i / num_rows) * width + 0.75 * node_size
+            print(x)
+            y = 0
+
+            node = Oval()
+            node.set_x(x)
+            node.set_y(10)
+            node.set_width(node_size)
+            node.set_height(node_size)
+            node.draw()
+        paper.display()
         return
 
-
+# dnn = DNN(input_layer_size, num_hidden_layers, size_hidden_layer, output_layer_size)
+dnn = DNN(8, 3, 5, 2)
+dnn.draw_nn()

@@ -6,7 +6,6 @@ import pygame
 import numpy as np
 from collections import deque
 
-
 input_layer_size = 267
 size_hidden_layer = 16
 num_hidden_layers = 4
