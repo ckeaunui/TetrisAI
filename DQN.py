@@ -90,4 +90,6 @@ class DNN:
         self.active_layer = 0
         return move
 
+    def get_loss(self):
+        return 1
 

@@ -25,12 +25,13 @@ for i in range(iterations):
     while env.playing:
         state = env.get_state_as_arr()
         # print(state)
-        move = dnn.get_best_action(state)  # Most of the time, but add a random factor
-        reward = env.execute_curr_state(move)
+        action = dnn.get_best_action(state)  # Most of the time, but add a random factor
+        reward = env.execute_curr_state(action)
         env.draw_board()
-        print(move, state)
+        print(action, state)
 
     print("test")
+    dnn.backprop()
     scores.append(env.score)
     dnn.reset()
 pygame.quit()
