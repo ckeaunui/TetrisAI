@@ -81,6 +81,12 @@ class DNN:
         self.active_layer += 1
         return Z_activated
 
+    def backprop(self, y, y_prime):  # Y is the score, y prime is the desired value
+        # Find partial derivative: dE/dy with respect to the input dE/dX, X is the layers input
+        # E = y_prime, E is a scalar value, Y, X are vectors  (Soon each will go up by one dim for batches)
+        learning_rate = 0.99 
+        return y - y_prime
+
     def get_best_action(self, state):
         Z = state
         # print(input_layer_activation)
