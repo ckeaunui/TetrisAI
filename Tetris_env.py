@@ -146,6 +146,7 @@ class Tetris:
     def get_state_as_arr(self):  # State: Board array (210), stored piece id (1), next piece id (1), score (1), Level (1), lines cleared (1)
         board = self.game_board.flatten()
         piece = np.asarray(self.current_piece.get_tetrino_as_arr()).flatten()
+        ref = np.asarray(self.current_piece.ref_point).flatten()
         next_piece = np.asarray(self.next_piece.get_tetrino_as_arr()).flatten()
         can_store = [1] if self.can_store else [0]
         if self.stored_piece is None:
@@ -153,7 +154,7 @@ class Tetris:
         else:
             stored_piece = np.asarray(self.stored_piece.get_tetrino_as_arr()).flatten()
 
-        state = np.concatenate((board, piece, next_piece, stored_piece, can_store))
+        state = np.concatenate((board, ref, piece, next_piece, stored_piece, can_store))
         return state
 
     # The board is made up of tiles. This function returns a given tile and its correct color
@@ -402,6 +403,17 @@ class Tetris:
         self.draw_game_over()
         pygame.time.delay(1000)
         pygame.quit()
+
+    def reset(self):
+        self.playing = True
+        self.can_store = True
+        self.last_drop = time.time()
+        self.gravity_timer = 3
+        self.game_board = np.zeros(shape=self.BOARD_DIMS, dtype=int)
+        self.reset_bag()
+        self.current_piece = None
+        self.next_piece = None
+        self.set_next_piece()
 
 
 """env = Tetris()

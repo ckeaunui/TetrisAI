@@ -8,14 +8,14 @@ from collections import deque
 
 class Layer:
     def __init__(self, input_size, output_size):
-        self.weights = np.random.rand(input_size * output_size) - 0.5
-        self.bias = 0
-        self.num_nodes = output_size
+        self.weights = np.random.rand(output_size, input_size) - 0.5
+        self.biases = np.zeros(output_size)
+        self.output_size = output_size
 
     def forward(self, X):  # Not working
-        print("X", X.shape)
-        print("W", self.weights.shape)
-        Z = np.dot(X, self.weights) + self.bias
+        Z = []
+        for i in range(self.output_size):
+            Z.append(np.dot(X, self.weights[i]) + self.biases[0])
         return Z
 
     def activation_ReLU(self, Z):  # Returns activated Z
@@ -39,26 +39,34 @@ class Layer:
             errors.append(self.weights[i] * dZ[i])
 
     def print_layer(self):
-        print("Weights", self.weights)
+        print("Weights: ", self.weights)
         print("Bias: ", self.bias)
 
 
 class DNN:
     def __init__(self, input_layer_size, num_hidden_layers, size_hidden_layer, output_layer_size):
         self.active_layer = 0
-        self.layers = np.empty(num_hidden_layers + 1, dtype=object)
-        self.size_hidden_layer = size_hidden_layer
+        self.input_layer_size = input_layer_size
         self.num_hidden_layers = num_hidden_layers
-        self.layers[0] = Layer(input_layer_size)
-        for i in range(1, num_hidden_layers):
-            layer_i = Layer(size_hidden_layer)
+        self.size_hidden_layer = size_hidden_layer
+        self.output_layer_size = output_layer_size
+        self.layers = np.empty(self.num_hidden_layers + 2, dtype=object)  # Hidden layers, one input, one output layer
+        self.reset()
+
+    def reset(self):
+        self.active_layer = 0
+        self.layers = np.empty(self.num_hidden_layers + 2, dtype=object)
+        self.size_hidden_layer = self.size_hidden_layer
+        self.num_hidden_layers = self.num_hidden_layers
+        self.layers[0] = Layer(self.input_layer_size, self.size_hidden_layer)
+        for i in range(1, self.num_hidden_layers):
+            layer_i = Layer(self.size_hidden_layer, self.size_hidden_layer)
             self.layers[i] = layer_i
-        self.layers[-1] = Layer(output_layer_size)
+        self.layers[self.num_hidden_layers] = Layer(self.size_hidden_layer, self.output_layer_size)
 
     def set_layer(self, input_size, output_size, bias=0):
         self.layers[self.active_layer].weights = np.empty(input_size * output_size)
         self.layers[self.active_layer].bias = bias
-
 
     def print_layers(self):
         for i in range(len(self.layers)):
@@ -73,19 +81,13 @@ class DNN:
         self.active_layer += 1
         return Z_activated
 
-
     def get_best_action(self, state):
-
-        input_layer_activation = self.forward_step(state)
-        layer_1_activation = self.forward_step(input_layer_activation)
-        layer_2_activation = self.forward_step(layer_1_activation)
-        layer_3_activation = self.forward_step(layer_2_activation)
-        layer_4_activation = self.forward_step(layer_3_activation)
-        output_layer_activation = self.forward_step(layer_4_activation)
-        move = np.argmax(output_layer_activation)
-        print(move)
-        print(len(output_layer_activation))
-
-
+        Z = state
+        # print(input_layer_activation)
+        for i in range(self.num_hidden_layers + 1):
+            Z = self.forward_step(Z.T)
+        move = np.argmax(Z)
+        self.active_layer = 0
         return move
+
 
