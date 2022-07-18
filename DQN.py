@@ -11,7 +11,7 @@ from shapes import Paper, Rectangle, Oval, Arrow
 
 class Layer:
     def __init__(self, input_size, output_size):
-        self.weights = 3 * (np.random.rand(output_size, input_size) - 0.5)
+        self.weights =  np.random.rand(output_size, input_size) - 0.5
         self.biases = np.zeros(output_size)
         self.output_size = output_size
 
@@ -135,12 +135,11 @@ class DNN:
                         # print(x, y, "-->", x2, y2)
                         arrow = Arrow()
                         if self.layers[i].weights[j][k] >= 0:
-                            width = 1 / (1 + np.exp(-self.layers[i].weights[j][k]))
                             arrow.set_color(color='green')  # Link color
                         else:
                             arrow.set_color(color='red')
-                            width = 0.1  # Width
-                        arrow.set_width(width)
+                        width = 1 / (1 + np.exp(-math.fabs(self.layers[i].weights[j][k])))  # Width
+                        arrow.set_width(2 * width)
                         arrow.draw(x+node_size/2, y+node_size/2, x2+node_size/2, y2+node_size/2)
                 # print("w", self.layers[i].weights)
 
