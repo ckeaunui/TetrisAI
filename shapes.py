@@ -194,6 +194,12 @@ class Rectangle(Shape):
         Paper.tk.canvas.create_rectangle(x1, y1, x2, y2, fill=self.color)
 
 
+class Arrow(Shape):
+
+    def draw(self, x1, y1, x2, y2):
+        Paper.tk.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.width)
+
+
 class Oval(Shape):
 
     def draw(self):

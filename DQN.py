@@ -4,15 +4,19 @@ import numpy as np
 import pygame
 from Tetris_env import Tetris
 from collections import deque
-from shapes import Paper, Rectangle, Oval
+import math
+from shapes import Paper, Rectangle, Oval, Arrow
 # Install Graphviz
 
 
 class Layer:
     def __init__(self, input_size, output_size):
-        self.weights = np.random.rand(output_size, input_size) - 0.5
+        self.weights = 3 * (np.random.rand(output_size, input_size) - 0.5)
         self.biases = np.zeros(output_size)
         self.output_size = output_size
+
+    def get_layer_size(self):
+        return self.output_size
 
     def forward(self, X):  # Not working
         Z = []
@@ -46,25 +50,25 @@ class Layer:
 
 
 class DNN:
-    def __init__(self, input_layer_size, num_hidden_layers, size_hidden_layer, output_layer_size):
+    def __init__(self, size_input_layer, num_hidden_layers, size_hidden_layer, size_output_layer):
         self.active_layer = 0
-        self.input_layer_size = input_layer_size
+        self.size_input_layer = size_input_layer
         self.num_hidden_layers = num_hidden_layers
         self.size_hidden_layer = size_hidden_layer
-        self.output_layer_size = output_layer_size
-        self.layers = np.empty(self.num_hidden_layers + 2, dtype=object)  # Hidden layers, one input, one output layer
+        self.size_output_layer = size_output_layer
+        self.layers = np.empty(self.num_hidden_layers + 1, dtype=object)  # Hidden layers, one input, one output layer
         self.reset()
 
     def reset(self):
         self.active_layer = 0
-        self.layers = np.empty(self.num_hidden_layers + 2, dtype=object)
+        self.layers = np.empty(self.num_hidden_layers + 1, dtype=object)
         self.size_hidden_layer = self.size_hidden_layer
         self.num_hidden_layers = self.num_hidden_layers
-        self.layers[0] = Layer(self.input_layer_size, self.size_hidden_layer)
+        self.layers[0] = Layer(self.size_input_layer, self.size_hidden_layer)
         for i in range(1, self.num_hidden_layers):
             layer_i = Layer(self.size_hidden_layer, self.size_hidden_layer)
             self.layers[i] = layer_i
-        self.layers[self.num_hidden_layers] = Layer(self.size_hidden_layer, self.output_layer_size)
+        self.layers[self.num_hidden_layers] = Layer(self.size_hidden_layer, self.size_output_layer)
 
     def set_layer(self, input_size, output_size, bias=0):
         self.layers[self.active_layer].weights = np.empty(input_size * output_size)
@@ -102,29 +106,58 @@ class DNN:
         return 1
 
     def draw_nn(self):
-
         height = 750
         width = 750
-        node_size = (height / self.size_hidden_layer) * 0.4
+        node_size = (height / self.size_input_layer) * 0.5
+        paper = Paper(width=width, height=height)
+        num_layers = len(self.layers)
+        layer_width = width / num_layers
+        coords = []
 
-        paper = Paper(width=750, height=750)
-        num_rows = self.num_hidden_layers+2
+        for i in range(num_layers):
+            num_nodes = self.layers[i].get_layer_size()
+            x = i / num_layers * width + node_size/2
+            layer_coords = []
+            for j in range(num_nodes):
+                y = j / num_nodes * height + node_size/2
+                layer_coords.append([x, y])
+            coords.append(layer_coords)
 
-        for i in range(0, num_rows):
+        j = 0
+        for i in range(len(coords)):  # For each layer
+            for j in range(len(coords[i])):  # For each node
+                x, y = coords[i][j]
+                # print(x, y)
 
-            x = (i / num_rows) * width + 0.75 * node_size
-            print(x)
-            y = 0
+                if i+1 in range(len(coords)):  # If there is a next layer
+                    for k in range(len(coords[i+1])):  # For each weight
+                        x2, y2 = coords[i+1][k]
+                        # print(x, y, "-->", x2, y2)
+                        arrow = Arrow()
+                        if self.layers[i].weights[j][k] >= 0:
+                            width = 1 / (1 + np.exp(-self.layers[i].weights[j][k]))
+                            arrow.set_color(color='green')  # Link color
+                        else:
+                            arrow.set_color(color='red')
+                            width = 0.1  # Width
+                        arrow.set_width(width)
+                        arrow.draw(x+node_size/2, y+node_size/2, x2+node_size/2, y2+node_size/2)
+                # print("w", self.layers[i].weights)
 
-            node = Oval()
-            node.set_x(x)
-            node.set_y(10)
-            node.set_width(node_size)
-            node.set_height(node_size)
-            node.draw()
+
+                color = 'white' if self.layers[i].biases[j] > 0 else 'black'
+                node = Oval()
+                node.set_x(x)
+                node.set_y(y)
+                node.set_color(color)
+                node.set_width(node_size)
+                node.set_height(node_size)
+                node.draw()
+
         paper.display()
         return
 
+
 # dnn = DNN(input_layer_size, num_hidden_layers, size_hidden_layer, output_layer_size)
-dnn = DNN(8, 3, 5, 2)
+dnn = DNN(8, 3, 6, 2)
 dnn.draw_nn()
