@@ -161,11 +161,11 @@ class DNN:
                         # print(x, y, "-->", x2, y2)
                         arrow = Arrow()
                         if self.layers[i].weights[j][k] >= 0:
-                            arrow.set_color(color='green')
+                            arrow.set_color(color='green')  # Link color
                         else:
                             arrow.set_color(color='red')
-                        width = 1 / (1 + np.exp(math.fabs(-self.layers[0].weights[0][j])))
-                        arrow.set_width(width)
+                        width = 1 / (1 + np.exp(-math.fabs(self.layers[i].weights[j][k])))  # Width
+                        arrow.set_width(2 * width)
                         arrow.draw(x+node_size/2, y+node_size/2, x2+node_size/2, y2+node_size/2)
                 color = 'white' if self.layers[i].biases[j] > 0 else 'black'
                 node = Oval()
