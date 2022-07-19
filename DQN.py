@@ -5,14 +5,14 @@ import pygame
 from Tetris_env import Tetris
 from collections import deque
 import math
-from shapes import Paper, Rectangle, Oval, Arrow
+from shapes import Paper, Rectangle, Oval, Arrow, Text
 # Install Graphviz
 
 
 class Layer:
     def __init__(self, input_size, output_size):
         self.weights = 3 * (np.random.rand(output_size, input_size) - 0.5)
-        self.biases = np.zeros(output_size)
+        self.biases = 2 * (np.random.rand(output_size) - 0.5)
         self.output_size = output_size
 
     def get_layer_size(self):
@@ -95,7 +95,6 @@ class DNN:
 
     def get_best_action(self, state):
         Z = state
-        # print(input_layer_activation)
         for i in range(self.num_hidden_layers + 1):
             Z = self.forward_step(Z.T)
         move = np.argmax(Z)
@@ -105,46 +104,69 @@ class DNN:
     def get_loss(self):
         return 1
 
-    def draw_nn(self):
-        height = 750
-        width = 750
-        node_size = (height / self.size_input_layer) * 0.5
-        paper = Paper(width=width, height=height)
+    def draw_nn(self):  # Draw the neural network to display its policy (red/black = negative, white/green = positive)
+        board_height = 750
+        board_width = 750
+        node_size = (board_height / self.size_input_layer+1) * 0.5
+        paper = Paper(width=board_width, height=board_height)
         num_layers = len(self.layers)
-        layer_width = width / num_layers
-        coords = []
 
+        # Get locations to draw to
+        input_coords = []
+        for i in range(self.size_input_layer):
+            y = i / self.size_input_layer * board_height + node_size/2
+            input_coords.append([node_size/2, y])
+        coords = []
         for i in range(num_layers):
             num_nodes = self.layers[i].get_layer_size()
-            x = i / num_layers * width + node_size/2
+            x_shift = (board_width / num_layers) / 2 - node_size/2
+            x = (i + 1) / (num_layers + 1) * board_width + x_shift #+ node_size/2
             layer_coords = []
             for j in range(num_nodes):
-                y = j / num_nodes * height + node_size/2
+                y_shift = (board_height / num_nodes) / 2 - node_size/2
+                y = j / num_nodes * board_height + y_shift
                 layer_coords.append([x, y])
             coords.append(layer_coords)
 
-        j = 0
+        # Draw input nodes
+        layer_size = self.size_input_layer
+        for j in range(layer_size):  # For each current node
+            x, y = input_coords[j]
+            for k in range(self.size_hidden_layer):  # For each next node
+                x2, y2 = coords[0][k]
+                arrow = Arrow()
+                if self.layers[0].weights[0][j] >= 0:
+                    arrow.set_color(color='green')  # Link color
+                else:
+                    arrow.set_color(color='red')
+                width = 1 / (1 + np.exp(math.fabs(-self.layers[0].weights[0][j])))
+                arrow.set_width(width)
+                arrow.draw(x + node_size / 2, y + node_size / 2, x2 + node_size / 2, y2 + node_size / 2)
+            node = Oval()
+            node.set_x(x)
+            node.set_y(y)
+            node.set_color('gray')
+            node.set_width(node_size)
+            node.set_height(node_size)
+            node.draw()
+
+        # Draw rest
         for i in range(len(coords)):  # For each layer
             for j in range(len(coords[i])):  # For each node
+                print(i, j)
                 x, y = coords[i][j]
-                # print(x, y)
-
                 if i+1 in range(len(coords)):  # If there is a next layer
                     for k in range(len(coords[i+1])):  # For each weight
                         x2, y2 = coords[i+1][k]
                         # print(x, y, "-->", x2, y2)
                         arrow = Arrow()
                         if self.layers[i].weights[j][k] >= 0:
-                            width = 1 / (1 + np.exp(-self.layers[i].weights[j][k]))
-                            arrow.set_color(color='green')  # Link color
+                            arrow.set_color(color='green')
                         else:
                             arrow.set_color(color='red')
-                            width = 0.1  # Width
+                        width = 1 / (1 + np.exp(math.fabs(-self.layers[0].weights[0][j])))
                         arrow.set_width(width)
                         arrow.draw(x+node_size/2, y+node_size/2, x2+node_size/2, y2+node_size/2)
-                # print("w", self.layers[i].weights)
-
-
                 color = 'white' if self.layers[i].biases[j] > 0 else 'black'
                 node = Oval()
                 node.set_x(x)
@@ -154,10 +176,19 @@ class DNN:
                 node.set_height(node_size)
                 node.draw()
 
+                # Draw node bias on top of node
+                """bias = Text()
+                color = 'white' if color == 'black' else 'black'
+                bias.set_color(color)
+                bias.set_x(x+node_size/2)
+                bias.set_y(y+node_size/2)
+                bias.draw(np.round(self.layers[i].biases[j], 2))"""
         paper.display()
         return
 
 
 # dnn = DNN(input_layer_size, num_hidden_layers, size_hidden_layer, output_layer_size)
-dnn = DNN(8, 3, 6, 2)
+dnn = DNN(20, 5, 16, 6)
 dnn.draw_nn()
+
+

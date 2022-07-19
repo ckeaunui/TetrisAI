@@ -30,7 +30,7 @@ for i in range(iterations):
 
     print("test")
     dnn.backprop()
-    dnn.draw_nn()
+    dnn.draw_nn(colored=False)
     scores.append(env.score)
     dnn.reset()
 pygame.quit()

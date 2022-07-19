@@ -179,6 +179,13 @@ class Shape():
         return self.color
 
 
+
+class Text(Shape):
+    def draw(self, text):
+        x1, y1, x2, y2 = self._location()
+        Paper.tk.canvas.create_text(x1, y1, text=text, fill=self.color)
+
+
 # Rectangle class is a subclass of Shape
 class Rectangle(Shape):
 
