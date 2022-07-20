@@ -188,7 +188,7 @@ class DNN:
 
 
 # dnn = DNN(input_layer_size, num_hidden_layers, size_hidden_layer, output_layer_size)
-dnn = DNN(20, 5, 16, 6)
+dnn = DNN(16, 5, 16, 6)
 dnn.draw_nn()
 
 
