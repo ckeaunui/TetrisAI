@@ -3,7 +3,7 @@ from Network import Network
 
 env = Tetris()
 agent = Network()
-agent.load("Trained_model.h5")
+agent.load("trained_model.h5")
 show = True
 while env.playing:
     next_states = env.get_next_states(env.game_board)
