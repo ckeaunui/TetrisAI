@@ -52,9 +52,10 @@ class Tetris:
         self.lines_cleared = 0
         self.playing = True
         self.can_store = True
+        self.bag = list(range(1, 8))
         self.game_board = np.zeros(shape=self.BOARD_DIMS, dtype=int)
-        self.next_piece = Tetrino(random.randint(1, 7))
-        self.active_piece = Tetrino(random.randint(1, 7))
+        self.active_piece = self._get_next_piece()
+        self.next_piece = self._get_next_piece()
 
     def reset(self):
         self.score = 0
@@ -62,14 +63,23 @@ class Tetris:
         self.lines_cleared = 0
         self.playing = True
         self.can_store = True
+        self.bag = list(range(1, 8))
         self.game_board = np.zeros(shape=self.BOARD_DIMS, dtype=int)
-        self.next_piece = Tetrino(random.randint(1, 7))
-        self.active_piece = Tetrino(random.randint(1, 7))
+        self.active_piece = self._get_next_piece()
+        self.next_piece = self._get_next_piece()
+
+    def _get_next_piece(self):
+        index = random.randint(0, len(self.bag)-1)
+        piece_id = self.bag.pop(index)
+        piece = Tetrino(piece_id)
+        if len(self.bag) == 0:
+            self.bag = list(range(1, 8))
+        return piece
 
     def print_board(self):
         print(self.game_board)
 
-    def _is_legal_move(self, board, piece: Tetrino,  move: [int, int]):
+    def _is_legal_move(self, board, piece: Tetrino, move: [int, int]):
         new_ref_point = piece.ref_point + move
         for y in range(piece.dim[0]):
             for x in range(piece.dim[1]):
@@ -191,6 +201,7 @@ class Tetris:
     def execute_action(self, action: (int, int), show):
         x_pos = action[0]
         rotation = action[1]
+        score_per_line = {0: 0, 1: 40, 2: 100, 3: 300, 4: 1200}
 
         while x_pos != self.active_piece.ref_point[1]:
             if x_pos < self.active_piece.ref_point[1]:
@@ -212,10 +223,11 @@ class Tetris:
         lines_cleared = self._get_lines_cleared(self.game_board)
         self.lines_cleared += lines_cleared
         reward = 1 + 10 * (lines_cleared ** 2)
-        self.score += reward
+        self.level = self.lines_cleared // 10
+        self.score += score_per_line.get(lines_cleared) * (self.level + 1) + self.active_piece.ref_point[0]
         self._clear_full_rows(self.game_board)
         self.active_piece = self.next_piece
-        self.next_piece = Tetrino(random.randint(1, 7))
+        self.next_piece = self._get_next_piece()
         if self._check_game_end(self.game_board):
             return -5, True
         return reward, False
@@ -229,32 +241,33 @@ class Tetris:
         for y in range(self.BOARD_DIMS[0]):
             for x in range(self.BOARD_DIMS[1]):
                 if self.game_board[y][x] != 0:
-                    img[y+1][x+1] = Tetrino(self.game_board[y][x]).color
+                    img[y + 1][x + 1] = Tetrino(self.game_board[y][x]).color
                 else:
                     if y < 4:
-                        img[y+1][x+1] = spawn_zone_color
+                        img[y + 1][x + 1] = spawn_zone_color
                     else:
-                        img[y+1][x+1] = empty_tile_color
+                        img[y + 1][x + 1] = empty_tile_color
 
         # Draw the active piece
         for y in range(self.active_piece.dim[0]):
             for x in range(self.active_piece.dim[1]):
                 if self.active_piece.shape[y][x] != 0:
-                    img[y + 1 + self.active_piece.ref_point[0]][x + 1 + self.active_piece.ref_point[1]] = Tetrino(self.active_piece.shape[y][x]).color
+                    img[y + 1 + self.active_piece.ref_point[0]][x + 1 + self.active_piece.ref_point[1]] = Tetrino(
+                        self.active_piece.shape[y][x]).color
                 else:
                     if self.active_piece.ref_point[0] < 4:
-                        img[y+1][x+1] = spawn_zone_color
+                        img[y + 1][x + 1] = spawn_zone_color
                     else:
-                        img[y+1][x+1] = spawn_zone_color
+                        img[y + 1][x + 1] = spawn_zone_color
 
         # Draw next piece
-        for y in range(1, 5):
+        for y in range(1, 6):
             for x in range(12, 18):
                 img[y][x] = spawn_zone_color
         for y in range(self.next_piece.dim[0]):
             for x in range(self.next_piece.dim[1]):
                 if self.next_piece.shape[y][x] != 0:
-                    img[y + 2][x + 12] = self.next_piece.color
+                    img[y + 3][x + 13] = self.next_piece.color
 
         # Turn img from an array to an image
         img_upscale = 35  # block width in pixels
@@ -268,14 +281,19 @@ class Tetris:
         draw.text((img_upscale * 12, img_upscale), "Next Piece", font=myFont, fill=title_color)
 
         # Draw Score section
-        draw.rectangle((img_upscale * 12, img_upscale * 6, img_upscale * 18, img_upscale * 11), fill=spawn_zone_color)
-        draw.text((img_upscale * 12, img_upscale * 6), "Score", font=myFont, fill=title_color)
-        draw.text((img_upscale * 12, img_upscale * 7), str(self.score), font=myFont, fill=title_color)
+        draw.rectangle((img_upscale * 12, img_upscale * 7, img_upscale * 18, img_upscale * 11), fill=spawn_zone_color)
+        draw.text((img_upscale * 12, img_upscale * 7), "Score", font=myFont, fill=title_color)
+        draw.text((img_upscale * 12, img_upscale * 8), str(self.score), font=myFont, fill=title_color)
 
         # Draw Rows Cleared section
-        draw.rectangle((img_upscale * 12, img_upscale * 12, img_upscale * 18, img_upscale * 17), fill=spawn_zone_color)
+        draw.rectangle((img_upscale * 12, img_upscale * 12, img_upscale * 18, img_upscale * 16), fill=spawn_zone_color)
         draw.text((img_upscale * 12, img_upscale * 12), "Rows Cleared", font=myFont, fill=title_color)
         draw.text((img_upscale * 12, img_upscale * 13), str(self.lines_cleared), font=myFont, fill=title_color)
+
+        # Draw Level section
+        draw.rectangle((img_upscale * 12, img_upscale * 17, img_upscale * 18, img_upscale * 21), fill=spawn_zone_color)
+        draw.text((img_upscale * 12, img_upscale * 17), "Level", font=myFont, fill=title_color)
+        draw.text((img_upscale * 12, img_upscale * 18), str(self.level), font=myFont, fill=title_color)
 
         # Convert the image into an upscaled array
         img = np.array(img)
