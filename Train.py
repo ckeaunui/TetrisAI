@@ -68,8 +68,6 @@ for i in tqdm(range(num_training_episodes)):
         if not done:
             state = next_states.get(action)
 
-        """else:
-            print("Episode: ", games_played, "\tScore: ", env.score)"""
     scores.append(env.score)
     recent_50 += env.score
     if env.score > recent_high_score:
