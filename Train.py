@@ -21,7 +21,7 @@ epsilon_min = 1e-3
 episode_end_decay = 1000
 epochs = 1
 replay_min_train_size = 1000
-num_training_episodes = 5000
+num_training_episodes = 2000
 save_every = 250
 
 agent = Network(input_size=state_size, layer_sizes=layer_sizes, output_size=output_size, activations=activations, loss=loss,
