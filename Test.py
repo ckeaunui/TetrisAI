@@ -2,8 +2,7 @@ from Tetris_env import Tetris
 from Network import Network
 import matplotlib.pyplot as plt
 
-
-show = False  # Show visuals of the game being play
+show = True  # Show visuals of the game being play
 scores = []
 num_test_runs = 50
 
