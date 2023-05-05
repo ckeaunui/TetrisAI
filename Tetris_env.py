@@ -277,7 +277,7 @@ class Tetris:
         title_color = (217, 45, 243)
         img = Image.fromarray(img, "RGB")
         img = img.resize((img.size[0] * img_upscale, img.size[1] * img_upscale), resample=Image.BOX)
-        myFont = ImageFont.truetype('OpenSans-VariableFont_wdth,wght.ttf', img_upscale-2)
+        myFont = ImageFont.truetype('Files/OpenSans-VariableFont_wdth,wght.ttf', img_upscale-2)
 
         # Draw Next Piece Title
         draw = ImageDraw.Draw(img)

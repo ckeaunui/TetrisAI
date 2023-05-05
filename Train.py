@@ -27,7 +27,7 @@ save_every = 250
 agent = Network(input_size=state_size, layer_sizes=layer_sizes, output_size=output_size, activations=activations, loss=loss,
                 optimizer=optimizer, discount=discount, exp_replay_size=exp_replay_size, pop_replay_rand_moves=pop_replay_rand_moves,
                 minibatch_size=minibatch_size, epsilon=epsilon, epsilon_min=epsilon_min, episode_end_decay=episode_end_decay)
-# agent.load("Trained_model.h5")  # Run this line to improve current trained model
+# agent.load("Trained_model.h5")  # Retrain the current trained model
 
 # target_net = copy.deepcopy(agent)
 env = Tetris()
