@@ -35,7 +35,7 @@ env = Tetris()
 high_score = 0
 games_played = 0
 avg_score = 0
-min_terminate_score = 5000
+min_terminate_score = 250000
 scores = []
 training = True
 
