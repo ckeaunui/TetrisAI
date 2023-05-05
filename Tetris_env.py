@@ -5,8 +5,7 @@ import time
 import copy
 import cv2
 from PIL import Image, ImageDraw, ImageFont
-
-from matplotlib import pyplot as plt
+import time
 
 
 class Tetrino:
@@ -199,10 +198,12 @@ class Tetris:
         return next_states
 
     def execute_action(self, action: (int, int), show):
+        self.active_piece.ref_point = [0, 3]
         x_pos = action[0]
         rotation = action[1]
         score_per_line = {0: 0, 1: 40, 2: 100, 3: 300, 4: 1200}
-
+        # start = time.process_time()  # Set show=False in Train.py to test piece movement speed
+        # Fastest gravity drops a tetrino every frame, ran at 60 fps.  1/60 = 0.0167 seconds
         while x_pos != self.active_piece.ref_point[1]:
             if x_pos < self.active_piece.ref_point[1]:
                 self.active_piece.move([0, -1])
@@ -210,14 +211,16 @@ class Tetris:
                 self.active_piece.move([0, 1])
             if show:
                 self.show()
+        # print(time.process_time() - start)  # Used to test if the model can outpace the quickest gravity level
         for _ in range(rotation):
             self.active_piece.rotate_right()
             if show:
                 self.show()
         while self._is_legal_move(self.game_board, self.active_piece, [1, 0]):
             self.active_piece.move([1, 0])
-            if show:
-                self.show()
+            """if show:
+                self.show()"""
+        self.show()
 
         self._place_piece(self.game_board, self.active_piece)
         lines_cleared = self._get_lines_cleared(self.game_board)
@@ -270,11 +273,11 @@ class Tetris:
                     img[y + 3][x + 13] = self.next_piece.color
 
         # Turn img from an array to an image
-        img_upscale = 35  # block width in pixels
+        img_upscale = 40  # block width in pixels
         title_color = (217, 45, 243)
         img = Image.fromarray(img, "RGB")
         img = img.resize((img.size[0] * img_upscale, img.size[1] * img_upscale), resample=Image.BOX)
-        myFont = ImageFont.truetype('Fontspring-DEMO-squad-bold.otf', img_upscale)
+        myFont = ImageFont.truetype('OpenSans-VariableFont_wdth,wght.ttf', img_upscale-2)
 
         # Draw Next Piece Title
         draw = ImageDraw.Draw(img)
