@@ -1,4 +1,4 @@
-https://user-images.githubusercontent.com/47498710/236370877-e063cafd-a9ac-4089-bcfb-7ee890fd2589.mov
+https://user-images.githubusercontent.com/47498710/236661059-3484776c-db9f-4a35-9471-75ba51b7ea0d.mov
 
 
 Test the pre-trained model over 50 episodes by running Test.py, or train a new model with Train.py.  The model is saved
